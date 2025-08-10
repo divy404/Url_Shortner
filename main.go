@@ -60,8 +60,22 @@ func ShortURLHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
-	shortUrl := createURL(data.URL) 
-	fmt.Fprintf(w,shortUrl)
+	shortUrl_ := createURL(data.URL) 
+	// fmt.Fprintf(w,shortUrl)
+	response := struct {
+		ShortURL string `json:"short_url"`
+	} {ShortURL: shortUrl_}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+}
+func redirectURLHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/redirect/"):]
+	url , err := getURL(id)
+	if err != nil {
+		http.Error(w, "Invalid request", http.StatusNotFound)
+	}
+	http.Redirect(w,r,url.OriginalURL,http.StatusFound)
 }
 func main() {
 	// fmt.Println("Url Shortner")
@@ -69,8 +83,9 @@ func main() {
 	// generateShortURL(OriginalURL)
 
 	// Register the handler function to handle all requests to the root URL ("/")
-	http.HandleFunc("/",handler)
-	http.HandleFunc("/shorten", ShortURLHandler)
+	 http.HandleFunc("/shorten", ShortURLHandler)
+    http.HandleFunc("/redirect/", redirectURLHandler)
+    http.HandleFunc("/", handler) // optional fallback
 
 	// Start the server 
 	fmt.Println("Starting server on port 3000...")
